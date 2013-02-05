@@ -144,15 +144,16 @@ pi : $(PIFILES) $(pidir)
 		fi \
           done;
 
-TRANSODS =
-TRANSCSV =
-
 DISTFILES = $(wildcard *.php) $(wildcard *.gif) $(wildcard *.pdf) \
             $(wildcard *.png) $(wildcard *.ico)  $(wildcard *.css) \
             $(wildcard *.js)  $(wildcard *.xml)  $(wildcard *.odt)\
             $(wildcard *.jpg) $(wildcard *.po)  $(wildcard *.sql) Makefile
 
 TRANSJS =
+
+TRANSODS =
+TRANSCSV =
+TRANSFAM = $(TRANSODS) $(TRANSCSV)
 
 distdir = $(PACKAGE)-$(VERSION)-$(RELEASE)
 
@@ -192,21 +193,20 @@ distdir: $(DISTFILES) $(PIFILES)
 po:
 	find . \( -name "*.xml" -o -name "*.js" -o -name "*.html" \) -exec \
 	perl -ne 'print "N_(\"$$1\")\n" while(m/\[TEXT:([^]]+)]/g)' {} \; \
-	> textxml.php
+	> tempCatalog.php
 
-	find . -type f -name "*.php" -print0 | xargs -0 php -r 'array_walk(array_slice($$argv,1),function($$f){array_walk(preg_filter("/.*@(searchLabel)\\s+([^\\n]+)\\n.*/s","\\2",array_map(function($$t){return$$t[1];},array_filter(token_get_all(file_get_contents($$f)),function($$t){return($$t[0]==T_DOC_COMMENT);}))),function($$t){printf("N_(\"%s\")\n",preg_replace("/\"/","\\\"",$$t));});});' >> textxml.php
+	find . -type f -name "*.php" -print0 | xargs -0 php -r 'array_walk(array_slice($$argv,1),function($$f){array_walk(preg_filter("/.*@(searchLabel)\\s+([^\\n]+)\\n.*/s","\\2",array_map(function($$t){return$$t[1];},array_filter(token_get_all(file_get_contents($$f)),function($$t){return($$t[0]==T_DOC_COMMENT);}))),function($$t){printf("N_(\"%s\")\n",preg_replace("/\"/","\\\"",$$t));});});' >> tempCatalog.php
 
 	find . \( -name "*.app" -o -name "*.php" \) -print \
 	| xgettext  -f- --keyword='_' --keyword='N_' --keyword='text' --keyword='Text' --language=c --from-code=iso8859-1 -o$(appname).pot
 
 	find . \( -name "*.js" -o -name "*.html" \) -print \
 	| xgettext  -f- --keyword='_'  --language=c -o $(appname)_js.pot
-	rm -f $(appname)_ODS.pot;
-	if [ ! -e $(appname)_ODS.pot ]; then \
-			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname).pot -o $(appname)_ODS.pot; \
+	rm -f $(appname)_FAM.pot;
+	if [ ! -e $(appname)_FAM.pot ]; then \
+			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname).pot -o $(appname)_FAM.pot; \
 		fi; \
-	php -q $(utildir)/fam2po.php $(TRANSODS)  >> $(appname)_ODS.pot;
-	php -q $(utildir)/csvfam2po.php $(TRANSCSV)  >> $(appname)_ODS.pot;
+	php -q $(utildir)/fam2po.php $(TRANSFAM)  >> $(appname)_FAM.pot;
 
 	echo "LANGS = '$(LANGS)'";
 
@@ -214,8 +214,8 @@ po:
 		if [ ! -e $(appname)_$$lang.po ]; then \
 			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname).pot -o $(appname)_$$lang.po; \
 		fi; \
-		msguniq $(appname)_ODS.pot > $(appname)_ODS_g.pot; \
-		msgcat $(appname).pot $(appname)_ODS_g.pot > $(appname)_tmp_$$lang.pot; \
+		msguniq $(appname)_FAM.pot > $(appname)_FAM_g.pot; \
+		msgcat $(appname).pot $(appname)_FAM_g.pot > $(appname)_tmp_$$lang.pot; \
 		msgmerge -s -v --force-po -N $(appname)_$$lang.po $(appname)_tmp_$$lang.pot  > $(appname)_$$lang.po.new; \
 		mv $(appname)_$$lang.po.new $(appname)_$$lang.po; \
 		rm -f $(appname)_tmp_$$lang.pot; \
@@ -229,7 +229,7 @@ po:
 		fi; \
         done \
 
-	@rm -f textxml.php
+	@rm -f tempCatalog.php
 	@rm -f $(appname)*.pot
 
 localedir=$(pubdir)/locale
