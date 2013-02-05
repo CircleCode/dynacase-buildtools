@@ -19,11 +19,11 @@ $colrepeat = 0;
 $dbg = false;
 
 for ($i = 1; $i < count($argv); $i++) {
-    log("Processing file " . $argv[$i]);
+    customLog("Processing file " . $argv[$i]);
     $pf = pathinfo($argv[$i]);
     $rfile = $pf["dirname"] . "/" . $pf["filename"];
     if (file_exists($argv[$i])) {
-        log("  --- csv extraction");
+        customLog("  --- csv extraction");
         $csvfile = $argv[$i] . ".csv";
         ods2csv($argv[$i], $csvfile);
         if ($csvfile) {
@@ -31,7 +31,7 @@ for ($i = 1; $i < count($argv); $i++) {
         }
         unlink($csvfile);
     } else {
-        log("Can't access file " . $argv[$i]);
+        customLog("Can't access file " . $argv[$i]);
     }
 }
 
@@ -44,7 +44,9 @@ function startElement($parser, $name, $attrs)
             // fill empty cells
             $idx = 0;
             foreach ($rows[$nrow] as $k => $v) {
-                if (!isset($rows[$nrow][$idx])) $rows[$nrow][$idx] = '';
+                if (!isset($rows[$nrow][$idx])) {
+                    $rows[$nrow][$idx] = '';
+                }
                 $idx++;
             }
             ksort($rows[$nrow], SORT_NUMERIC);
@@ -63,7 +65,9 @@ function startElement($parser, $name, $attrs)
     }
     if ($name == "TEXT:P") {
         if (isset($rows[$nrow][$ncol])) {
-            if (strlen($rows[$nrow][$ncol]) > 0) $rows[$nrow][$ncol].= '\n';
+            if (strlen($rows[$nrow][$ncol]) > 0) {
+                $rows[$nrow][$ncol].= '\n';
+            }
         }
     }
 }
@@ -132,7 +136,9 @@ function xmlcontent2csv($xmlcontent, &$fcsv)
 
 function ods2content($odsfile, &$content)
 {
-    if (!file_exists($odsfile)) return "file $odsfile not found";
+    if (!file_exists($odsfile)) {
+        return "file $odsfile not found";
+    }
     $cibledir = uniqid("/var/tmp/ods");
     
     $cmd = sprintf("unzip -j %s content.xml -d %s >/dev/null", $odsfile, $cibledir);
@@ -171,20 +177,13 @@ function ods2csv($odsfile, $csvfile)
     }
 }
 
-function log($msg)
-{
-    global $dbg;
-    if ($dbg) {
-        echo "fam2po: " . $msg . "\n";
-    }
-}
-
-
 function makePo($fi)
 {
     
     $fdoc = fopen($fi, "r");
-    if (!$fdoc) log("fam2po: Can't access file [$fi]");
+    if (!$fdoc) {
+        customLog("fam2po: Can't access file [$fi]");
+    }
     $nline = - 1;
     $famname = "*******";
     $famtitle = "";
@@ -195,16 +194,16 @@ function makePo($fi)
         
         $buffer = rtrim(fgets($fdoc, 16384));
         $data = explode(";", $buffer);
-        // if (isUTF8($data))    $data=array_map("utf8_decode",$data);
         $num = count($data);
-        if ($num < 1) continue;
-        
-        $data[0] = trim($data[0]);
+        if ($num < 1) {
+            continue;
+        }
+        $data[0] = isset($data[0]) ? trim($data[0]) : "";
         switch ($data[0]) {
             case "BEGIN":
                 
-                $famname = $data[5];
-                $famtitle = $data[2];
+                $famname = isset($data[5]) ? $data[5] : "";
+                $famtitle = isset($data[2]) ? $data[2] : "";
                 
                 echo "#, fuzzy, ($fi::$nline)\n";
                 echo "msgid \"" . $famname . "#title\"\n";
@@ -228,7 +227,7 @@ function makePo($fi)
                 if (($data[6] == "enum" || $data[6] == "enumlist") && !$data[11]) {
                     $d = str_replace('\,', '\#', $data[12]);
                     $tenum = explode(",", $d);
-                    foreach ($tenum as $ke => $ve) {
+                    foreach ($tenum as $ve) {
                         $d = str_replace('\#', ',', $ve);
                         $ee = explode("|", $d);
                         echo "#, fuzzy, ($fi::$nline)\n";
@@ -237,7 +236,9 @@ function makePo($fi)
                     }
                 }
                 // Options ----------------------------------------------
-                if (!isset($data[15])) $data[15] = '';
+                if (!isset($data[15])) {
+                    $data[15] = '';
+                }
                 $topt = explode("|", $data[15]);
                 foreach ($topt as $ko => $vo) {
                     $oo = explode("=", $vo);
@@ -260,4 +261,11 @@ function makePo($fi)
             }
     }
 }
-?>
+
+function customLog($msg)
+{
+    global $dbg;
+    if ($dbg) {
+        echo "fam2po: " . $msg . "\n";
+    }
+}
