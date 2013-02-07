@@ -2,11 +2,9 @@
 # -----------------------------------------------------------------------------
 
 pages_php = $(patsubst %.php,$(pubdir)/$(style)/$(appname)/%.php,$(filter-out $(pages_not_php),$(wildcard *.php)))
-pages_pub = $(patsubst %.pub,$(pubdir)/$(style)/$(appname)/%.pub,$(filter-out $(pages_not_pub),$(wildcard *.pub)))
 pages_gif = $(patsubst %.gif,$(pubdir)/$(style)/$(appname)/Images/%.gif,$(filter-out $(pages_not_gif),$(wildcard *.gif)))
 pages_png = $(patsubst %.png,$(pubdir)/$(style)/$(appname)/Images/%.png,$(filter-out $(pages_not_png),$(wildcard *.png)))
 pages_ico = $(patsubst %.ico,$(pubdir)/$(style)/$(appname)/Images/%.ico,$(filter-out $(pages_not_ico),$(wildcard *.ico)))
-pages_doc = $(patsubst %.doc,$(pubdir)/$(style)/$(appname)/doc/%.doc,$(filter-out $(pages_not_doc),$(wildcard *.doc)))
 pages_jpg = $(patsubst %.jpg,$(pubdir)/$(style)/$(appname)/Images/%.jpg,$(filter-out $(pages_not_jpg),$(wildcard *.jpg)))
 pages_app = $(patsubst %.app,$(pubdir)/$(style)/$(appname)/%.app,$(filter-out $(pages_not_app),$(wildcard *.app)))
 pages_xml = $(patsubst %.xml,$(pubdir)/$(style)/$(appname)/Layout/%.xml,$(filter-out $(pages_not_xml),$(wildcard *.xml)))
@@ -17,9 +15,7 @@ pages_css = $(patsubst %.css,$(pubdir)/$(style)/$(appname)/Layout/%.css,$(filter
 pages_js  = $(patsubst %.js,$(pubdir)/$(style)/$(appname)/Layout/%.js,$(filter-out $(pages_not_js),$(wildcard *.js)))
 pages_sty = $(patsubst %.sty,$(pubdir)/$(style)/$(appname)/%.sty,$(filter-out $(pages_not_sty),$(wildcard *.sty)))
 pages_sql = $(patsubst %.sql,$(pubdir)/$(style)/$(appname)/%.sql,$(filter-out $(pages_not_sql),$(wildcard *.sql)))
-pages_pdf = $(patsubst %.pdf,$(pubdir)/$(style)/$(appname)/Docs/%.pdf,$(filter-out $(pages_not_pdf),$(wildcard *.pdf)))
 
-pages_appxml = $(patsubst application.xml,$(pubdir)/$(appname)/application.xml,$(wildcard application.xml))
 
 pages_not_xml = info.xml
 
@@ -27,8 +23,7 @@ pages_top = $(addprefix $(pubdir)/,$(TOP_MODULES))
 
 pages = $(pages_php) $(pages_gif) $(pages_png) $(pages_ico) $(pages_doc) $(pages_ods) $(pages_csv) \
         $(pages_jpg) $(pages_app) $(pages_xml) $(pages_odt) $(pages_css) \
-        $(pages_js)  $(pages_top) $(pages_sty) $(pages_sql) $(pages_pdf) \
-	$(pages_appxml)
+        $(pages_js)  $(pages_top) $(pages_sty)  
 
 installcp = cp -f
 
@@ -45,18 +40,13 @@ TAR=tar
 endif
 
 # Publish and check for post-publishing rules
-all : publish $(POSTPUBLISH) pi
+all : publish $(POSTPUBLISH)
 
-$(pubdir)/%.conf: %.conf
-	$(installcp) $< $@
 
 $(pubdir)/%.php: %.php
 	$(installcp) $< $@
 
 $(pubdir)/$(style)/$(appname)/%.php : %.php $(pubdir)/$(style)/$(appname)
-	$(installcp) $< $@
-
-$(pubdir)/$(style)/$(appname)/%.pub : %.pub $(pubdir)/$(style)/$(appname)
 	$(installcp) $< $@
 
 $(pubdir)/$(style)/$(appname)/%.app : %.app $(pubdir)/$(style)/$(appname)
@@ -75,9 +65,6 @@ $(pubdir)/$(style)/$(appname)/%.ods : %.ods $(pubdir)/$(style)/$(appname)
 	$(installcp) $< $@
 
 $(pubdir)/$(style)/$(appname)/%.csv : %.csv $(pubdir)/$(style)/$(appname)
-	$(installcp) $< $@
-
-$(pubdir)/$(style)/$(appname)/doc/%.doc : %.doc $(pubdir)/$(style)/$(appname)/Doc
 	$(installcp) $< $@
 
 $(pubdir)/$(style)/$(appname)/Images/%.png : %.png $(pubdir)/$(style)/$(appname)/Images
@@ -101,11 +88,6 @@ $(pubdir)/$(style)/$(appname)/Layout/%.js : %.js $(pubdir)/$(style)/$(appname)/L
 $(pubdir)/$(style)/$(appname)/%.sty : %.sty $(pubdir)/$(style)/$(appname)
 	$(installcp) $< $@
 
-$(pubdir)/$(style)/$(appname)/Docs/%.pdf : %.pdf $(pubdir)/$(style)/$(appname)/Docs
-	$(installcp) $< $@
-
-$(pubdir)/$(appname)/application.xml: application.xml
-	$(installcp) $< $@
 
 $(pubdir) :
 	mkdir -p $@
@@ -133,18 +115,9 @@ publish : $(pages)  mo
 		fi \
 	   done; \
 
-$(pidir):
-	mkdir -p $@
 
-pi : $(PIFILES) $(pidir)
-	  @for file in  ouille $(PIFILES); \
-           do \
-		if [ $$file != "ouille" ]; then \
-		   cp $$file $(pidir); \
-		fi \
-          done;
 
-DISTFILES = $(wildcard *.php) $(wildcard *.gif) $(wildcard *.pdf) \
+DISTFILES = $(wildcard *.php) $(wildcard *.gif)  \
             $(wildcard *.png) $(wildcard *.ico)  $(wildcard *.css) \
             $(wildcard *.js)  $(wildcard *.xml)  $(wildcard *.odt)\
             $(wildcard *.jpg) $(wildcard *.po)  $(wildcard *.sql) Makefile
@@ -172,11 +145,11 @@ webinst:
 	-rm -f content.tar.gz
 	-rm -fr localpub
 
-distdir: $(DISTFILES) $(PIFILES)
+distdir: $(DISTFILES)
 	-rm -rf $(distdir)
 	mkdir $(distdir)
 	-chmod 777 $(distdir)
-	@for file in $(DISTFILES) $(PIFILES); do \
+	@for file in $(DISTFILES); do \
 	  if test -d $$file; then \
 	    make -C $$file distdir=../$(distdir)/$$file distdir; \
 	  else	\
