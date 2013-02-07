@@ -14,7 +14,6 @@ pages_csv = $(patsubst %.csv,$(pubdir)/$(style)/$(appname)/%.csv,$(filter-out $(
 pages_css = $(patsubst %.css,$(pubdir)/$(style)/$(appname)/Layout/%.css,$(filter-out $(pages_not_css),$(wildcard *.css)))
 pages_js  = $(patsubst %.js,$(pubdir)/$(style)/$(appname)/Layout/%.js,$(filter-out $(pages_not_js),$(wildcard *.js)))
 pages_sty = $(patsubst %.sty,$(pubdir)/$(style)/$(appname)/%.sty,$(filter-out $(pages_not_sty),$(wildcard *.sty)))
-pages_sql = $(patsubst %.sql,$(pubdir)/$(style)/$(appname)/%.sql,$(filter-out $(pages_not_sql),$(wildcard *.sql)))
 
 
 pages_not_xml = info.xml
@@ -52,8 +51,6 @@ $(pubdir)/$(style)/$(appname)/%.php : %.php $(pubdir)/$(style)/$(appname)
 $(pubdir)/$(style)/$(appname)/%.app : %.app $(pubdir)/$(style)/$(appname)
 	$(installcp) $< $@
 
-$(pubdir)/$(style)/$(appname)/%.sql : %.sql $(pubdir)/$(style)/$(appname)
-	$(installcp) $< $@
 
 $(pubdir)/$(style)/$(appname)/Layout/%.xml : %.xml $(pubdir)/$(style)/$(appname)/Layout
 	$(installcp) $< $@
@@ -120,7 +117,7 @@ publish : $(pages)  mo
 DISTFILES = $(wildcard *.php) $(wildcard *.gif)  \
             $(wildcard *.png) $(wildcard *.ico)  $(wildcard *.css) \
             $(wildcard *.js)  $(wildcard *.xml)  $(wildcard *.odt)\
-            $(wildcard *.jpg) $(wildcard *.po)  $(wildcard *.sql) Makefile
+            $(wildcard *.jpg) $(wildcard *.po)  Makefile
 
 TRANSJS =
 
