@@ -126,6 +126,7 @@ TRANSCSV =
 TRANSFAM = $(TRANSODS) $(TRANSCSV)
 
 distdir = $(PACKAGE)-$(VERSION)-$(RELEASE)
+podir = locale
 
 dist: distdir
 	cp $(utildir)/PubRule  $(distdir)
@@ -172,40 +173,48 @@ po:
 
 	find . \( -name "*.js" -o -name "*.html" \) -print \
 	| xgettext  -f- --keyword='_'  --language=c -o $(appname)_js.pot
-	rm -f $(appname)_FAM.pot;
-	if [ ! -e $(appname)_FAM.pot ]; then \
-			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname).pot -o $(appname)_FAM.pot; \
-		fi; \
-	php -q $(utildir)/fam2po.php $(TRANSFAM)  >> $(appname)_FAM.pot;
+
+	php -q $(utildir)/fam2po.php $(podir) $(TRANSFAM);
 
 	echo "LANGS = '$(LANGS)'";
 
 	for lang in  $(LANGS); do \
-		if [ ! -e $(appname)_$$lang.po ]; then \
-			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname).pot -o $(appname)_$$lang.po; \
+		for fampo in `ls $(podir)/*.pot`; do \
+			filename="$${fampo##*/}"; \
+			basefilename="$${filename%.*}"; \
+			if [ ! -e $(podir)/$${lang}/$${basefilename}_$$lang.po ]; then \
+				LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $$fampo -o $(podir)/$${lang}/$${basefilename}_$$lang.po; \
+			fi; \
+			msguniq $$fampo > $(podir)/$${basefilename}_g.pot; \
+			msgmerge -s -v --force-po -N $(podir)/$${lang}/$${basefilename}_$$lang.po $(podir)/$${basefilename}_g.pot  > $(podir)/$${lang}/$${basefilename}_$$lang.po.new; \
+			mv $(podir)/$${lang}/$${basefilename}_$$lang.po.new $(podir)/$${lang}/$${basefilename}_$$lang.po; \
+			rm -f $(podir)/$${basefilename}_g.pot; \
+		done; \
+		if [ ! -e $(podir)/$${lang}/$(appname)_$$lang.po ]; then \
+			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname).pot -o $(podir)/$${lang}/$(appname)_$$lang.po; \
 		fi; \
-		msguniq $(appname)_FAM.pot > $(appname)_FAM_g.pot; \
-		msgcat $(appname).pot $(appname)_FAM_g.pot > $(appname)_tmp_$$lang.pot; \
-		msgmerge -s -v --force-po -N $(appname)_$$lang.po $(appname)_tmp_$$lang.pot  > $(appname)_$$lang.po.new; \
-		mv $(appname)_$$lang.po.new $(appname)_$$lang.po; \
+		msgcat $(appname).pot  > $(appname)_tmp_$$lang.pot; \
+		msgmerge -s -v --force-po -N $(podir)/$${lang}/$(appname)_$$lang.po $(appname)_tmp_$$lang.pot  > $(podir)/$${lang}/$(appname)_$$lang.po.new; \
+		mv $(podir)/$${lang}/$(appname)_$$lang.po.new $(podir)/$${lang}/$(appname)_$$lang.po; \
 		rm -f $(appname)_tmp_$$lang.pot; \
 		if [ -f $(appname)_js.pot ]; then \
-			if [ -f js_$(appname)_$$lang.po ]; then \
-				msgmerge -s -v --force-po js_$(appname)_$$lang.po $(appname)_js.pot  > $(appname)_js_$$lang.pot; \
-				mv $(appname)_js_$$lang.pot js_$(appname)_$$lang.po; \
+			if [ -f $(podir)/$${lang}/js_$(appname)_$$lang.po ]; then \
+				msgmerge -s -v --force-po $(podir)/$${lang}/js_$(appname)_$$lang.po $(appname)_js.pot  > $(appname)_js_$$lang.pot; \
+				mv $(appname)_js_$$lang.pot $(podir)/$${lang}/js_$(appname)_$$lang.po; \
 			else \
-				cp $(appname)_js.pot js_$(appname)_$$lang.po; \
+				cp $(appname)_js.pot $(podir)/$${lang}/js_$(appname)_$$lang.po; \
 			fi; \
 		fi; \
         done \
 
 	@rm -f tempCatalog.php
 	@rm -f $(appname)*.pot
+	@rm -f $(podir)/*.pot
 
 localedir=$(pubdir)/locale
 
-pages_gmo = $(patsubst $(appname)_%.po,%.gmo,$(wildcard *.po))
-pages_mo = $(patsubst $(appname)_%.po,$(localedir)/%/LC_MESSAGES/$(appname).mo,$(wildcard *.po))
+pages_gmo = $(patsubst %.po,%.gmo,$(wildcard *.po))
+pages_mo += 
 pages_jsmo = $(patsubst js_$(appname)_%.po,$(localedir)/%/js/$(appname)-mo.js,$(wildcard *.po))
 pages_lang = $(patsubst lang_%.php,$(localedir)/%/lang.php,$(wildcard lang_*.php))
 
@@ -215,7 +224,7 @@ $(localedir)/%/LC_MESSAGES:
 $(localedir)/%/js:
 	 mkdir -p $@
 
-$(localedir)/%/LC_MESSAGES/$(appname).mo : /var/tmp/$(appname)_%.gmo  $(localedir)/%/LC_MESSAGES $(wildcard *.po)
+$(localedir)/%/LC_MESSAGES/$(appname)_%.mo : /var/tmp/%.gmo  $(localedir)/%/LC_MESSAGES $(wildcard *.po)
 	 $(installcp) $< $@
 
 $(localedir)/%/js/$(appname)-mo.js :  js_$(appname)_%.po $(localedir)/%/js
@@ -226,7 +235,7 @@ $(localedir)/%/js/$(appname)-mo.js :  js_$(appname)_%.po $(localedir)/%/js
 $(localedir)/%/lang.php: lang_%.php $(localedir)/%/LC_MESSAGES
 	$(installcp) $< $@
 
-/var/tmp/$(appname)_%.gmo: $(appname)_%.po
+/var/tmp/%.gmo: %.po
 	msgfmt -v $< -o $@;
 
 mo: $(pages_mo) $(pages_jsmo) $(pages_lang)
