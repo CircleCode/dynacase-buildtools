@@ -15,8 +15,9 @@ $ncol = 0;
 $rows = array();
 $colrepeat = 0;
 $dbg = false;
+$podir = $argv[1];
 
-for ($i = 1; $i < count($argv); $i++) {
+for ($i = 2; $i < count($argv); $i++) {
     $err = "";
     $familyFile = $argv[$i];
     debugMessage("Processing file " . $familyFile);
@@ -30,7 +31,7 @@ for ($i = 1; $i < count($argv); $i++) {
                         $csvfile = $familyFile . ".csv";
                         ods2csv($familyFile, $csvfile);
                         if (file_exists($csvfile)) {
-                            extractPOFromCSV($csvfile);
+                            extractPOFromCSV($csvfile, $podir);
                         } else {
                             throw new Exception("Unable to generate CSV from " . $familyFile);
                         }
@@ -38,7 +39,7 @@ for ($i = 1; $i < count($argv); $i++) {
                         break;
 
                     case 'csv':
-                        extractPOFromCSV($familyFile);
+                        extractPOFromCSV($familyFile, $podir);
                         break;
 
                     default:
@@ -70,19 +71,23 @@ function debugMessage($msg)
  * extractPOFromCSV from a CSV file and print it on standard output
  *
  * @param  string $fi file input path
+ * @param string $podir Po directory
  * @return void
  */
-function extractPOFromCSV($fi)
+function extractPOFromCSV($fi, $podir)
 {
     $fdoc = fopen($fi, "r");
     if (!$fdoc) {
         new Exception("fam2po: Can't access file [$fi]");
     } else {
+        $podoc = null;
+        $contentToWrite = "";
         $nline = - 1;
         $famname = "*******";
         $cv_idview_index = 0;
         $cv_lview_index = 0;
         $cv_menu_index = 0;
+        $date = date("c");
         while (!feof($fdoc)) {
             
             $nline++;
@@ -100,12 +105,31 @@ function extractPOFromCSV($fi)
                 case "BEGIN":
                     $famname = getArrayIndexValue($data, 5);
                     $famtitle = getArrayIndexValue($data, 2);
-                    echo "#, fuzzy, ($fi::$nline)\n";
-                    echo "msgid \"" . $famname . "#title\"\n";
-                    echo "msgstr \"" . $famtitle . "\"\n\n";
+                    if ($famname) $podoc = fopen($podir . "/" . $famname . ".pot", "w+");
+                    $contentToWrite = "msgid \"\"\n";
+                    $contentToWrite.= "msgstr \"\"\n";
+                    $contentToWrite.= "\"Project-Id-Version: $famname \\n\"\n";
+                    $contentToWrite.= "\"Report-Msgid-Bugs-To: \\n\"\n";
+                    $contentToWrite.= "\"POT-Creation-Date: $date\\n\"\n";
+                    $contentToWrite.= "\"PO-Revision-Date: $date\\n\"\n";
+                    $contentToWrite.= "\"Last-Translator: Automatically generated\\n\"\n";
+                    $contentToWrite.= "\"Language-Team: none\\n\"\n";
+                    $contentToWrite.= "\"MIME-Version: 1.0\\n\"\n";
+                    $contentToWrite.= "\"Content-Type: text/plain; charset=UTF-8\\n\"\n";
+                    $contentToWrite.= "\"Content-Transfer-Encoding: 8bit\\n\"\n";
+                    $contentToWrite.= "\"Language: \\n\"\n\n";
+                    $contentToWrite.= "#, fuzzy, ($fi::$nline)\n";
+                    $contentToWrite.= "msgid \"" . $famname . "#title\"\n";
+                    $contentToWrite.= "msgstr \"" . $famtitle . "\"\n\n";
                     break;
 
                 case "END":
+                    if (!$podoc) {
+                        new Exception("fam2po: Can't create tempory family po file [$podir/$famname.pot]");
+                    } else {
+                        fwrite($podoc, $contentToWrite);
+                        fclose($podoc);
+                    }
                     $famname = "*******";
                     break;
 
@@ -129,23 +153,41 @@ function extractPOFromCSV($fi)
                     if ($type === "CVDOC") {
                         $cvName = getArrayIndexValue($data, 2);
                         if ($cvName && !is_numeric($cvName) && $cv_idview_index) {
+                            $cvdoc = fopen($podir . "/" . $cvName . ".pot", "w+");
+                            if (!$cvdoc) {
+                                new Exception("fam2po: Can't create tempory CV po file [$podir/$cvName.pot]");
+                            }
+                            $cvContentToWrite = "msgid \"\"\n";
+                            $cvContentToWrite.= "msgstr \"\"\n";
+                            $cvContentToWrite.= "\"Project-Id-Version: $cvName \\n\"\n";
+                            $cvContentToWrite.= "\"Report-Msgid-Bugs-To: \\n\"\n";
+                            $cvContentToWrite.= "\"POT-Creation-Date: $date\\n\"\n";
+                            $cvContentToWrite.= "\"PO-Revision-Date: $date\\n\"\n";
+                            $cvContentToWrite.= "\"Last-Translator: Automatically generated\\n\"\n";
+                            $cvContentToWrite.= "\"Language-Team: none\\n\"\n";
+                            $cvContentToWrite.= "\"MIME-Version: 1.0\\n\"\n";
+                            $cvContentToWrite.= "\"Content-Type: text/plain; charset=UTF-8\\n\"\n";
+                            $cvContentToWrite.= "\"Content-Transfer-Encoding: 8bit\\n\"\n";
+                            $cvContentToWrite.= "\"Language: \\n\"\n\n";
                             $tcv_idview = explode('\n', getArrayIndexValue($data, $cv_idview_index));
                             $tcv_lview = explode('\n', getArrayIndexValue($data, $cv_lview_index));
                             $tcv_menu = explode('\n', getArrayIndexValue($data, $cv_menu_index));
                             foreach ($tcv_idview as $i => $id) {
-                                if ($cv_lview_index) {
-                                    echo "#: $fi:$nline\n";
-                                    echo "#, fuzzy\n";
-                                    echo "msgid \"" . $cvName . "#label#" . $id . "\"\n";
-                                    echo "msgstr \"" . $tcv_lview[$i] . "\"\n\n";
+                                if ($cv_lview_index && $tcv_lview[$i]) {
+                                    $cvContentToWrite.= "#: $fi:$nline\n";
+                                    $cvContentToWrite.= "#, fuzzy\n";
+                                    $cvContentToWrite.= "msgid \"" . $cvName . "#label#" . $id . "\"\n";
+                                    $cvContentToWrite.= "msgstr \"" . $tcv_lview[$i] . "\"\n\n";
                                 }
-                                if ($cv_menu_index) {
-                                    echo "#: $fi:$nline\n";
-                                    echo "#, fuzzy\n";
-                                    echo "msgid \"" . $cvName . "#menu#" . $id . "\"\n";
-                                    echo "msgstr \"" . $tcv_menu[$i] . "\"\n\n";
+                                if ($cv_menu_index && $tcv_menu[$i]) {
+                                    $cvContentToWrite.= "#: $fi:$nline\n";
+                                    $cvContentToWrite.= "#, fuzzy\n";
+                                    $cvContentToWrite.= "msgid \"" . $cvName . "#menu#" . $id . "\"\n";
+                                    $cvContentToWrite.= "msgstr \"" . $tcv_menu[$i] . "\"\n\n";
                                 }
                             }
+                            fwrite($cvdoc, $cvContentToWrite);
+                            fclose($cvdoc);
                         }
                     }
                     break;
@@ -154,9 +196,9 @@ function extractPOFromCSV($fi)
                 case "MODATTR":
                 case "PARAM":
                 case "OPTION":
-                    echo "#, fuzzy, ($fi::$nline)\n";
-                    echo "msgid \"" . $famname . "#" . strtolower(getArrayIndexValue($data, 1)) . "\"\n";
-                    echo "msgstr \"" . getArrayIndexValue($data, 3) . "\"\n\n";
+                    $contentToWrite.= "#, fuzzy, ($fi::$nline)\n";
+                    $contentToWrite.= "msgid \"" . $famname . "#" . strtolower(getArrayIndexValue($data, 1)) . "\"\n";
+                    $contentToWrite.= "msgstr \"" . getArrayIndexValue($data, 3) . "\"\n\n";
                     // Enum ----------------------------------------------
                     $type = getArrayIndexValue($data, 6);
                     if ($type == "enum" || $type == "enumlist") {
@@ -165,9 +207,9 @@ function extractPOFromCSV($fi)
                         foreach ($tenum as $ve) {
                             $d = str_replace('\#', ',', $ve);
                             $enumValues = explode("|", $d);
-                            echo "#, fuzzy, ($fi::$nline)\n";
-                            echo "msgid \"" . $famname . "#" . strtolower(getArrayIndexValue($data, 1)) . "#" . (str_replace('\\', '', getArrayIndexValue($enumValues, 0))) . "\"\n";
-                            echo "msgstr \"" . (str_replace('\\', '', getArrayIndexValue($enumValues, 1))) . "\"\n\n";
+                            $contentToWrite.= "#, fuzzy, ($fi::$nline)\n";
+                            $contentToWrite.= "msgid \"" . $famname . "#" . strtolower(getArrayIndexValue($data, 1)) . "#" . (str_replace('\\', '', getArrayIndexValue($enumValues, 0))) . "\"\n";
+                            $contentToWrite.= "msgstr \"" . (str_replace('\\', '', getArrayIndexValue($enumValues, 1))) . "\"\n\n";
                         }
                     }
                     // Options ----------------------------------------------
@@ -185,9 +227,9 @@ function extractPOFromCSV($fi)
                             case "eltitle":
                             case "elsymbol":
                             case "showempty":
-                                echo "#, fuzzy, ($fi::$nline)\n";
-                                echo "msgid \"" . $famname . "#" . strtolower(getArrayIndexValue($data, 1)) . "#" . strtolower($currentOptionKey) . "\"\n";
-                                echo "msgstr \"" . $currentOptionValue . "\"\n\n";
+                                $contentToWrite.= "#, fuzzy, ($fi::$nline)\n";
+                                $contentToWrite.= "msgid \"" . $famname . "#" . strtolower(getArrayIndexValue($data, 1)) . "#" . strtolower($currentOptionKey) . "\"\n";
+                                $contentToWrite.= "msgstr \"" . $currentOptionValue . "\"\n\n";
                         }
                     }
                 }
