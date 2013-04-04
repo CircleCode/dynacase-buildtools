@@ -194,6 +194,7 @@ function extractPOFromCSV($fi, $podir)
                 case "MODATTR":
                 case "PARAM":
                 case "OPTION":
+		    $contentToWrite.= "#: $fi\n";
                     $contentToWrite.= "#, fuzzy, ($fi)\n";
                     $contentToWrite.= "msgid \"" . $famname . "#" . strtolower(getArrayIndexValue($data, 1)) . "\"\n";
                     $contentToWrite.= "msgstr \"" . getArrayIndexValue($data, 3) . "\"\n\n";
