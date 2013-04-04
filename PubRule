@@ -169,10 +169,10 @@ po:
 	find . -type f -name "*.php" -print0 | xargs -0 php -r 'array_walk(array_slice($$argv,1),function($$f){array_walk(preg_filter("/.*@(searchLabel)\\s+([^\\n]+)\\n.*/s","\\2",array_map(function($$t){return$$t[1];},array_filter(token_get_all(file_get_contents($$f)),function($$t){return($$t[0]==T_DOC_COMMENT);}))),function($$t){printf("N_(\"%s\")\n",preg_replace("/\"/","\\\"",$$t));});});' >> tempCatalog.php
 
 	find . \( -name "*.app" -o -name "*.php" \) -print \
-	| xgettext  -f- --keyword='_' --keyword='N_' --keyword='text' --keyword='Text' --language=c --from-code=iso8859-1 -o$(appname).pot
+	| xgettext --no-location --omit-header -f- --keyword='_' --keyword='N_' --keyword='text' --keyword='Text' --language=c --from-code=iso8859-1 -o$(appname).pot
 
 	find . \( -name "*.js" -o -name "*.html" \) -print \
-	| xgettext  -f- --keyword='_'  --language=c -o $(appname)_js.pot
+	| xgettext --no-location --omit-header -f- --keyword='_'  --language=c -o $(appname)_js.pot
 
 	php -q $(utildir)/fam2po.php $(podir) $(TRANSFAM);
 
