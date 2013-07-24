@@ -240,6 +240,7 @@ class GenerateStub
                             $famTitle = $data[2];
                             $name = $data[5];
                         }
+                        $this->attr[$famName]=array();
                         break;
                     case 'CLASS';
                         $className = $data[1];
