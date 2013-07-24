@@ -169,7 +169,7 @@ po:
 	find . -type f -name "*.php" -print0 | xargs -0 php -r 'array_walk(array_slice($$argv,1),function($$f){array_walk(preg_filter("/.*@(searchLabel)\\s+([^\\n]+)\\n.*/s","\\2",array_map(function($$t){return$$t[1];},array_filter(token_get_all(file_get_contents($$f)),function($$t){return($$t[0]==T_DOC_COMMENT);}))),function($$t){printf("N_(\"%s\")\n",preg_replace("/\"/","\\\"",$$t));});});' >> tempCatalog.php
 
 	find . \( -name "*.app" -o -name "*.php" \) -print \
-	| xgettext --no-location --omit-header -f- --keyword='_' --keyword='N_' --keyword='text' --keyword='Text' --language=c --from-code=iso8859-1 -o$(appname).pot
+	| xgettext --no-location --omit-header -f- --keyword='_' --keyword='N_' --keyword='text' --keyword='Text' --language=c --from-code=iso8859-1 -o$(appname)_app_.pot
 
 	find . \( -name "*.js" -o -name "*.html" \) -print \
 	| xgettext --no-location --omit-header -f- --keyword='_'  --language=c -o $(appname)_js.pot
@@ -187,13 +187,14 @@ po:
 			fi; \
 			msguniq $$fampo > $(podir)/$${basefilename}_g.pot; \
 			msgmerge -s -v --force-po -N $(podir)/$${lang}/$${basefilename}_$$lang.po $(podir)/$${basefilename}_g.pot  > $(podir)/$${lang}/$${basefilename}_$$lang.po.new; \
+			cp $(podir)/$${lang}/$${basefilename}_$$lang.po.new $(podir)/$${lang}/$${basefilename}_$$lang.po.fam; \
 			mv $(podir)/$${lang}/$${basefilename}_$$lang.po.new $(podir)/$${lang}/$${basefilename}_$$lang.po; \
 			rm -f $(podir)/$${basefilename}_g.pot; \
 		done; \
 		if [ ! -e $(podir)/$${lang}/$(appname)_$$lang.po ]; then \
 			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname).pot -o $(podir)/$${lang}/$(appname)_$$lang.po; \
 		fi; \
-		msgcat $(appname).pot  > $(appname)_tmp_$$lang.pot; \
+		msgcat $(appname)_app_.pot  > $(appname)_tmp_$$lang.pot; \
 		msgmerge -s -v --force-po -N $(podir)/$${lang}/$(appname)_$$lang.po $(appname)_tmp_$$lang.pot  > $(podir)/$${lang}/$(appname)_$$lang.po.new; \
 		mv $(podir)/$${lang}/$(appname)_$$lang.po.new $(podir)/$${lang}/$(appname)_$$lang.po; \
 		rm -f $(appname)_tmp_$$lang.pot; \
@@ -205,11 +206,16 @@ po:
 				cp $(appname)_js.pot $(podir)/$${lang}/js_$(appname)_$$lang.po; \
 			fi; \
 		fi; \
+		if [ -f $(podir)/$${lang}/$(appname)_$$lang.po.fam ]; then \
+			msgcat $(podir)/$${lang}/$(appname)_$$lang.po $(podir)/$${lang}/$(appname)_$$lang.po.fam > $(podir)/$${lang}/$(appname)_$$lang.po.all; \
+			mv $(podir)/$${lang}/$(appname)_$$lang.po.all $(podir)/$${lang}/$(appname)_$$lang.po; \
+		fi; \
         done \
 
 	@rm -f tempCatalog.php
 	@rm -f $(appname)*.pot
 	@rm -f $(podir)/*.pot
+	@rm -f $(podir)/*/*.po.fam
 
 localedir=$(pubdir)/locale
 
