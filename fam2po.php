@@ -225,6 +225,7 @@ function extractPOFromCSV($fi, $podir)
                             case "ltitle":
                             case "eltitle":
                             case "elsymbol":
+                            case "lsymbol":
                             case "showempty":
                                 $contentToWrite.= "#, fuzzy, ($fi)\n";
                                 $contentToWrite.= "msgid \"" . $famname . "#" . strtolower(getArrayIndexValue($data, 1)) . "#" . strtolower($currentOptionKey) . "\"\n";
