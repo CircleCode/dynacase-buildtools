@@ -11,7 +11,7 @@ abstract class xgettextCommon
     
     public static function mySystem($cmd)
     {
-        print "$cmd\n";
+        //print "$cmd\n";
         exec($cmd, $out, $var);
         if ($var != 0) {
             throw new Exception("Exec : $cmd - " . print_r($out, true));
@@ -30,7 +30,6 @@ abstract class xgettextCommon
     
     protected function getXOptions()
     {
-        global $argv;
         return implode(" ", $this->options);
     }
     
@@ -54,6 +53,11 @@ abstract class xgettextCommon
         if ((isset($options["f"]) && $options["f"] == "-") || (isset($options["files-from"]) && $options["files-from"] == "-")) {
             $sFiles = file_get_contents('php://stdin');
             $this->inputFiles = preg_split('/[\s,]+/', $sFiles);
+            foreach ($this->inputFiles as $k => $file) {
+                if (trim($file) == "") {
+                    unset($this->inputFiles[$k]);
+                }
+            }
             //@todo delete -f options
             $this->options = explode(' ', preg_replace('/\s+(-f\s*-)/', '', implode(' ', $this->options)));
             $this->options = explode(' ', preg_replace('/\s+(--files-from\s*=\s*-)/', '', implode(' ', $this->options)));

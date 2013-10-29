@@ -1,0 +1,19 @@
+#!/usr/bin/env php
+<?php
+/*
+ * @author Anakeen
+ * @license http://www.fsf.org/licensing/licenses/agpl-3.0.html GNU Affero General Public License
+*/
+
+require_once "lib/xgettextJs.php";
+
+
+if (count($argv) < 3) {
+    print xgettextJs::getUsage();
+    exit(0);
+}
+$xt = new xgettextJs();
+$xt->extract();
+
+printf("%s wrote.\n", $xt->getOutputFile());
+
