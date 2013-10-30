@@ -193,7 +193,7 @@ po:
 			rm -f $(podir)/$${basefilename}_g.pot; \
 		done; \
 		if [ ! -e $(podir)/$${lang}/$(appname)_$$lang.po ]; then \
-			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname).pot -o $(podir)/$${lang}/$(appname)_$$lang.po; \
+			LC_ALL=fr_FR.UTF-8 msginit --no-translator -i $(appname)_app_.pot -o $(podir)/$${lang}/$(appname)_$$lang.po; \
 		fi; \
 		msgcat  $(appname)_layout.pot $(appname)_app_.pot  > $(appname)_tmp_$$lang.pot; \
 		msgmerge -q -s -v --force-po -N $(podir)/$${lang}/$(appname)_$$lang.po $(appname)_tmp_$$lang.pot  > $(podir)/$${lang}/$(appname)_$$lang.po.new; \
