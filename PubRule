@@ -96,7 +96,7 @@ po:
 
 	@echo Extracting from layout from $(LAYOUTPOFIND)
 	@find $(LAYOUTPOFIND) \( -name "*.xml" -o -name "*.js" -o -name "*.html" \) \
-	| $(utildir)/xgettextLayout -o $(LAYOUT_POT) -f -
+	| $(utildir)/xgettextLayout --force-po -o $(LAYOUT_POT) -f -
 
 	@echo Extracting from Js from $(JSPOFIND)
 	@find $(JSPOFIND) \( -name "*.js" -o -name "*.html" \) \
