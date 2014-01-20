@@ -36,7 +36,7 @@ FULLNAME = $(PACKAGE)-$(VERSION)-$(RELEASE)
 
 WEBINST_ROOTFILES = info.xml $(wildcard LICENSE)
 
-webinst:
+webinst: po-check
 	$(eval WEBINST_TEMPDIR := $(shell mktemp --tmpdir -d))
 	mkdir -p $(WEBINST_TEMPDIR)/localpub/
 	# Publish files into temp dir
@@ -139,6 +139,21 @@ po:
 	[ -e "$(PHP_POT)" ] && rm -f "$(PHP_POT)" || true
 	[ -e "$(JS_POT)" ] && rm -f "$(JS_POT)" || true
 	[ -e "$(FAM_POT_DIR)" ] && rm -rf "$(FAM_POT_DIR)" || true
+
+po-check:
+	@echo Checking po files syntax
+
+	po_syntax_errors=0; \
+	for catalog in `find locale -name '*.po'`; do \
+		msgfmt -c -o - $$catalog >/dev/null; \
+		if [ $$? -gt 0 ]; then \
+			po_syntax_errors=1; \
+		fi; \
+	done; \
+	if [ $$po_syntax_errors -gt 0 ]; then \
+	        echo some po files contains errors; \
+	        exit 1; \
+	fi
 
 ##----------------------------------------------------
 ## -- end gettext translation
